@@ -23,10 +23,10 @@ class PostViewController: UIViewController {
         return tv
     }()
 
-    private lazy var dataSource: UITableViewDiffableDataSource<Int, Post> = {
-        let ds = UITableViewDiffableDataSource<Int, Post>(tableView: tableView) { tableView, indexPath, itemIdentifier in
+    private lazy var dataSource: UITableViewDiffableDataSource<Int, Post.ID> = {
+        let ds = UITableViewDiffableDataSource<Int, Post.ID>(tableView: tableView) { tableView, indexPath, itemIdentifier in
             let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! PostCell
-            cell.configure(with: itemIdentifier)            
+            cell.configure(with: self.postFeed.posts.first(where: {$0.id == itemIdentifier}) )
             return cell
         }
         return ds
@@ -58,40 +58,40 @@ class PostViewController: UIViewController {
 
 extension PostViewController /* Pub-Sub setup */{
     func setupSubscriptions() {
-
-        postFeed.$posts.sink { completion in
-            print("\(#file) | \(#line) || Posts subscription ended : \(completion)")
-        } receiveValue: { [weak self] posts in
-            guard let self = self else { return }
-            var snapshot = self.dataSource.snapshot()
-            if !snapshot.sectionIdentifiers.contains(0) {
-                snapshot.appendSections([0])
-            }
-            var appends = [Post]()
-            var reconfigures = [Post]()
-            posts.forEach { post in
-                if snapshot.indexOfItem(post) == nil {
-                    appends.append(post)
-                } else {
-                    reconfigures.append(post)
+        postFeed.$posts
+            .receive(on: RunLoop.main)
+            .sink { [weak self] posts in
+                guard let self = self else { return }
+                var snapshot = self.dataSource.snapshot()
+                if !snapshot.sectionIdentifiers.contains(0) {
+                    snapshot.appendSections([0])
+                }
+                var appends = [Post.ID]()
+                var reconfigures = [Post.ID]()
+                posts.forEach { post in
+                    if snapshot.indexOfItem(post.id) == nil {
+                        appends.append(post.id)
+                    } else {
+                        reconfigures.append(post.id)
+                    }
+                }
+                snapshot.appendItems(appends)
+                snapshot.reconfigureItems(reconfigures)
+                self.dataSource.apply(snapshot, animatingDifferences: true) {
+                    self.navigationItem.title = "Posts : \(self.postFeed.posts.count)"
                 }
             }
-            snapshot.appendItems(appends)
-            snapshot.reconfigureItems(reconfigures)
-            self.dataSource.apply(snapshot, animatingDifferences: true) {
-                self.navigationItem.title = "Posts : \(self.postFeed.posts.count)"
-            }
-        }
-        .store(in: &cancellables)
+            .store(in: &cancellables)
     }
 }
 
 extension PostViewController: UITableViewDelegate {
-    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] action, sourceView, completion in
+    func tableView(_ tableView: UITableView,
+                   trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completion in
             guard let self = self else { return }
             var snapshot = self.dataSource.snapshot()
-            if let item = snapshot.itemIdentifiers.first (where: { $0 == self.postFeed.posts[indexPath.row] }) {
+            if let item = snapshot.itemIdentifiers.first (where: { $0 == self.postFeed.posts[indexPath.row].id }) {
                 snapshot.deleteItems([item])
                 self.dataSource.apply(snapshot)
             }
@@ -101,7 +101,31 @@ extension PostViewController: UITableViewDelegate {
         deleteAction.backgroundColor = .systemRed
         deleteAction.image = UIImage(systemName: "trash")
 
-        return UISwipeActionsConfiguration(actions: [deleteAction])
+        let favoriteAction = UIContextualAction(style: .normal, title: "Favorite") { [weak self] _, _, completion in
+            guard let self = self else { return }
+            self.postFeed.posts[indexPath.row].isFavorite = true
+            completion(true)
+        }
+        favoriteAction.backgroundColor = .systemBlue
+        favoriteAction.image = UIImage(systemName: "heart")
+
+        let unFavoriteAction = UIContextualAction(style: .normal, title: "Unfavorite") { [weak self] _, _, completion in
+            guard let self = self else { return }
+            self.postFeed.posts[indexPath.row].isFavorite = false
+            completion(true)
+        }
+        unFavoriteAction.backgroundColor = .systemGray2
+        unFavoriteAction.image = UIImage(systemName: "heart.slash")
+
+        var actions = [deleteAction]
+
+        if postFeed.posts[indexPath.row].isFavorite == true {
+            actions.append(unFavoriteAction)
+        } else {
+            actions.append(favoriteAction)
+        }
+
+        return UISwipeActionsConfiguration(actions: actions)
 
     }
 }
