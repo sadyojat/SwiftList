@@ -19,6 +19,7 @@ class PostViewController: UIViewController {
     private lazy var tableView: UITableView = {
         let tv = UITableView(frame: .zero, style: .plain)
         tv.translatesAutoresizingMaskIntoConstraints = false
+        tv.delegate = self
         return tv
     }()
 
@@ -84,3 +85,22 @@ class PostViewController: UIViewController {
     }
 }
 
+extension PostViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] action, sourceView, completion in
+            guard let self = self else { return }
+            var snapshot = self.dataSource.snapshot()
+            if let item = snapshot.itemIdentifiers.first (where: { $0 == self.postFeed.posts[indexPath.row] }) {
+                snapshot.deleteItems([item])
+                self.dataSource.apply(snapshot)
+            }
+            self.postFeed.posts.remove(at: indexPath.row)
+            completion(true)
+        }
+        deleteAction.backgroundColor = .systemRed
+        deleteAction.image = UIImage(systemName: "trash")
+
+        return UISwipeActionsConfiguration(actions: [deleteAction])
+
+    }
+}
