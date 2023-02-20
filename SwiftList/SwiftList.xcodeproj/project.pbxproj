@@ -68,13 +68,13 @@
 		84006F0E29A329EF00F1FC34 /* SwiftList */ = {
 			isa = PBXGroup;
 			children = (
+				84006F3329A3520F00F1FC34 /* ViewControllers */,
 				84006F3029A33B6300F1FC34 /* DataStore */,
 				84006F2B29A3399600F1FC34 /* DataModel */,
 				84006F2629A338D900F1FC34 /* Cache */,
 				84006F2329A338C000F1FC34 /* Network */,
 				84006F0F29A329EF00F1FC34 /* AppDelegate.swift */,
 				84006F1129A329EF00F1FC34 /* SceneDelegate.swift */,
-				84006F1329A329EF00F1FC34 /* PostViewController.swift */,
 				84006F1529A329EF00F1FC34 /* Main.storyboard */,
 				84006F1829A329F000F1FC34 /* Assets.xcassets */,
 				84006F1A29A329F000F1FC34 /* LaunchScreen.storyboard */,
@@ -115,6 +115,14 @@
 				84006F3129A33B9D00F1FC34 /* PostFeed.swift */,
 			);
 			path = DataStore;
+			sourceTree = "<group>";
+		};
+		84006F3329A3520F00F1FC34 /* ViewControllers */ = {
+			isa = PBXGroup;
+			children = (
+				84006F1329A329EF00F1FC34 /* PostViewController.swift */,
+			);
+			path = ViewControllers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

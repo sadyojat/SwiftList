@@ -52,6 +52,17 @@ class PostViewController: UIViewController {
 
         navigationItem.title = "Posts : \(postFeed.posts.count)"
 
+        setupSubscriptions()
+
+        Task { [weak self] in
+            guard let self = self else { return }
+            self.postFeed.posts = (try? await self.networkInteractor.fetch(.posts) as? [Post]) ?? []
+        }
+    }
+}
+
+extension PostViewController /* Pub-Sub setup */{
+    func setupSubscriptions() {
         postFeed.$posts.sink { [weak self] _ in
             guard let self = self else { return }
             self.navigationItem.title = "\(self.postFeed.posts.count)"
@@ -77,11 +88,6 @@ class PostViewController: UIViewController {
             }
         }
         .store(in: &cancellables)
-
-        Task { [weak self] in
-            guard let self = self else { return }
-            self.postFeed.posts = (try? await self.networkInteractor.fetch(.posts) as? [Post]) ?? []
-        }
     }
 }
 
