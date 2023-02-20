@@ -33,7 +33,7 @@ class PostCell: UITableViewCell {
         imageView.tintColor = .systemRed
         NSLayoutConstraint.activate([
             imageView.widthAnchor.constraint(equalTo: imageView.heightAnchor),
-            imageView.heightAnchor.constraint(equalToConstant: 30)
+            imageView.heightAnchor.constraint(equalToConstant: 20)
         ])
         return imageView
     }()
@@ -67,14 +67,10 @@ class PostCell: UITableViewCell {
         ])
     }
 
-    func configure(with post: Post) {
-        text.text = post.title
-        secondaryText.text = post.body
-        if post.isFavorite == true {
-            heartImageView.layer.opacity = 1
-        } else {
-            heartImageView.layer.opacity = 0
-        }
+    func configure(with post: Post?) {
+        text.text = post?.title ?? ""
+        secondaryText.text = post?.body ?? ""
+        heartImageView.layer.opacity = (post?.isFavorite == true) ? 1 : 0
     }
 
     required init?(coder: NSCoder) {
@@ -85,5 +81,4 @@ class PostCell: UITableViewCell {
     override func setSelected(_ selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
     }
-
 }
