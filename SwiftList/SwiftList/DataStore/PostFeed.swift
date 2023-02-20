@@ -5,6 +5,8 @@
 //  Created by Alok Irde on 2/19/23.
 //
 
+
+import OrderedCollections
 import Combine
 import Foundation
 
@@ -15,5 +17,5 @@ class PostFeed: ObservableObject {
 
     private init() {}
 
-    @Published var posts = [Post]()
+    @Published var postMap = OrderedDictionary<Post.ID, Post>()
 }

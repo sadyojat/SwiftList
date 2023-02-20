@@ -68,6 +68,9 @@ class PostCell: UITableViewCell {
     }
 
     func configure(with post: Post?) {
+        if post?.isFavorite == true {
+            print("**** Favorite : \(post?.id)")
+        }
         text.text = post?.title ?? ""
         secondaryText.text = post?.body ?? ""
         heartImageView.layer.opacity = (post?.isFavorite == true) ? 1 : 0

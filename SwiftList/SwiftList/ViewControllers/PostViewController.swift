@@ -6,6 +6,7 @@
 //
 
 import Combine
+import OrderedCollections
 import UIKit
 
 class PostViewController: UIViewController {
@@ -26,7 +27,7 @@ class PostViewController: UIViewController {
     private lazy var dataSource: UITableViewDiffableDataSource<Int, Post.ID> = {
         let ds = UITableViewDiffableDataSource<Int, Post.ID>(tableView: tableView) { tableView, indexPath, itemIdentifier in
             let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! PostCell
-            cell.configure(with: self.postFeed.posts.first(where: {$0.id == itemIdentifier}) )
+            cell.configure(with: self.postFeed.postMap[itemIdentifier] )
             return cell
         }
         return ds
@@ -45,40 +46,50 @@ class PostViewController: UIViewController {
             tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
 
-        navigationItem.title = "Posts : \(postFeed.posts.count)"
+        navigationItem.title = "Posts : \(postFeed.postMap.count)"
 
         setupSubscriptions()
 
         Task { [weak self] in
             guard let self = self else { return }
-            self.postFeed.posts = (try? await self.networkInteractor.fetch(.posts) as? [Post]) ?? []
+            if let posts = (try? await self.networkInteractor.fetch(.posts) as? [Post]),
+               posts.count > 0 {
+                for post in posts {
+                    self.postFeed.postMap[post.id] = post
+                }
+            }
         }
     }
 }
 
 extension PostViewController /* Pub-Sub setup */{
     func setupSubscriptions() {
-        postFeed.$posts
-            .receive(on: RunLoop.main)
-            .sink { [weak self] posts in
+
+        postFeed.$postMap
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] mappedPosts in
                 guard let self = self else { return }
                 var snapshot = self.dataSource.snapshot()
+
                 if !snapshot.sectionIdentifiers.contains(0) {
                     snapshot.appendSections([0])
                 }
+
                 var appends = [Post.ID]()
                 var reconfigures = [Post.ID]()
-                posts.forEach { post in
-                    if snapshot.indexOfItem(post.id) == nil {
-                        appends.append(post.id)
+
+                mappedPosts.forEach { mappedPost in
+                    if snapshot.indexOfItem(mappedPost.key) == nil {
+                        appends.append(mappedPost.key)
                     } else {
-                        reconfigures.append(post.id)
+                        reconfigures.append(mappedPost.key)
                     }
                 }
+
                 snapshot.appendItems(appends)
                 snapshot.reconfigureItems(reconfigures)
                 self.dataSource.apply(snapshot, animatingDifferences: true) {
-                    self.navigationItem.title = "Posts : \(self.postFeed.posts.count)"
+                    self.navigationItem.title = "Posts : \(String(describing: self.postFeed.postMap.count))"
                 }
             }
             .store(in: &cancellables)
@@ -91,19 +102,21 @@ extension PostViewController: UITableViewDelegate {
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completion in
             guard let self = self else { return }
             var snapshot = self.dataSource.snapshot()
-            if let item = snapshot.itemIdentifiers.first (where: { $0 == self.postFeed.posts[indexPath.row].id }) {
+            let key = self.postFeed.postMap.elements[indexPath.row].key
+            if let item = snapshot.itemIdentifiers.first (where: { $0 == key }) {
                 snapshot.deleteItems([item])
                 self.dataSource.apply(snapshot)
+                self.postFeed.postMap[key] = nil
             }
-            self.postFeed.posts.remove(at: indexPath.row)
             completion(true)
         }
         deleteAction.backgroundColor = .systemRed
         deleteAction.image = UIImage(systemName: "trash")
 
+        let key = self.postFeed.postMap.elements[indexPath.row].key
         let favoriteAction = UIContextualAction(style: .normal, title: "Favorite") { [weak self] _, _, completion in
             guard let self = self else { return }
-            self.postFeed.posts[indexPath.row].isFavorite = true
+            self.postFeed.postMap[key]?.isFavorite = true
             completion(true)
         }
         favoriteAction.backgroundColor = .systemBlue
@@ -111,7 +124,7 @@ extension PostViewController: UITableViewDelegate {
 
         let unFavoriteAction = UIContextualAction(style: .normal, title: "Unfavorite") { [weak self] _, _, completion in
             guard let self = self else { return }
-            self.postFeed.posts[indexPath.row].isFavorite = false
+            self.postFeed.postMap[key]?.isFavorite = false
             completion(true)
         }
         unFavoriteAction.backgroundColor = .systemGray2
@@ -119,7 +132,7 @@ extension PostViewController: UITableViewDelegate {
 
         var actions = [deleteAction]
 
-        if postFeed.posts[indexPath.row].isFavorite == true {
+        if self.postFeed.postMap[key]?.isFavorite == true {
             actions.append(unFavoriteAction)
         } else {
             actions.append(favoriteAction)
