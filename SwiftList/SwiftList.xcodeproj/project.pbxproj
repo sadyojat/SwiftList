@@ -19,6 +19,7 @@
 		84006F2D29A339A400F1FC34 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84006F2C29A339A400F1FC34 /* Models.swift */; };
 		84006F2F29A339BF00F1FC34 /* DataModelProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84006F2E29A339BF00F1FC34 /* DataModelProtocol.swift */; };
 		84006F3229A33B9D00F1FC34 /* PostFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84006F3129A33B9D00F1FC34 /* PostFeed.swift */; };
+		84006F3629A3530500F1FC34 /* PostCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84006F3529A3530500F1FC34 /* PostCell.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		84006F2C29A339A400F1FC34 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		84006F2E29A339BF00F1FC34 /* DataModelProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataModelProtocol.swift; sourceTree = "<group>"; };
 		84006F3129A33B9D00F1FC34 /* PostFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostFeed.swift; sourceTree = "<group>"; };
+		84006F3529A3530500F1FC34 /* PostCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostCell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +70,7 @@
 		84006F0E29A329EF00F1FC34 /* SwiftList */ = {
 			isa = PBXGroup;
 			children = (
+				84006F3429A352E900F1FC34 /* TableViewCells */,
 				84006F3329A3520F00F1FC34 /* ViewControllers */,
 				84006F3029A33B6300F1FC34 /* DataStore */,
 				84006F2B29A3399600F1FC34 /* DataModel */,
@@ -123,6 +126,14 @@
 				84006F1329A329EF00F1FC34 /* PostViewController.swift */,
 			);
 			path = ViewControllers;
+			sourceTree = "<group>";
+		};
+		84006F3429A352E900F1FC34 /* TableViewCells */ = {
+			isa = PBXGroup;
+			children = (
+				84006F3529A3530500F1FC34 /* PostCell.swift */,
+			);
+			path = TableViewCells;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -205,6 +216,7 @@
 				84006F2529A338D200F1FC34 /* NetworkInteractor.swift in Sources */,
 				84006F2D29A339A400F1FC34 /* Models.swift in Sources */,
 				84006F2A29A3396D00F1FC34 /* NetworkEnums.swift in Sources */,
+				84006F3629A3530500F1FC34 /* PostCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

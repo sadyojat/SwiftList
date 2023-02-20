@@ -25,13 +25,8 @@ class PostViewController: UIViewController {
 
     private lazy var dataSource: UITableViewDiffableDataSource<Int, Post> = {
         let ds = UITableViewDiffableDataSource<Int, Post>(tableView: tableView) { tableView, indexPath, itemIdentifier in
-            let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-            var config = cell.defaultContentConfiguration()
-            config.text = "\(itemIdentifier.title)"
-            config.secondaryText = "\(itemIdentifier.body)"
-            config.image = UIImage(systemName: "arrow.down")
-            cell.contentConfiguration = config
-            cell.accessoryType = .disclosureIndicator
+            let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! PostCell
+            cell.configure(with: itemIdentifier)            
             return cell
         }
         return ds
@@ -41,7 +36,7 @@ class PostViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        tableView.register(PostCell.self, forCellReuseIdentifier: "cell")
         view.addSubview(tableView)
         NSLayoutConstraint.activate([
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -63,9 +58,9 @@ class PostViewController: UIViewController {
 
 extension PostViewController /* Pub-Sub setup */{
     func setupSubscriptions() {
-        postFeed.$posts.sink { [weak self] _ in
-            guard let self = self else { return }
-            self.navigationItem.title = "\(self.postFeed.posts.count)"
+
+        postFeed.$posts.sink { completion in
+            print("\(#file) | \(#line) || Posts subscription ended : \(completion)")
         } receiveValue: { [weak self] posts in
             guard let self = self else { return }
             var snapshot = self.dataSource.snapshot()
