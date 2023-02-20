@@ -102,12 +102,10 @@ extension PostViewController: UITableViewDelegate {
         let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completion in
             guard let self = self else { return }
             var snapshot = self.dataSource.snapshot()
-            let key = self.postFeed.postMap.elements[indexPath.row].key
-            if let item = snapshot.itemIdentifiers.first (where: { $0 == key }) {
-                snapshot.deleteItems([item])
-                self.dataSource.apply(snapshot)
-                self.postFeed.postMap[key] = nil
-            }
+            let itemIdentifier = snapshot.itemIdentifiers[indexPath.row]
+            snapshot.deleteItems([itemIdentifier])
+            self.dataSource.apply(snapshot)
+            self.postFeed.postMap[itemIdentifier] = nil
             completion(true)
         }
         deleteAction.backgroundColor = .systemRed
