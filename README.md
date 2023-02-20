@@ -22,3 +22,7 @@ While using Combine its important that the developer focuses on some sanity chec
 3. ItemIdentifier is not the object instance, but is used to indicate the type that represents a stable identity of the object instance. Generally we conform data entities to Identifiable, in which case a unique id key is required. Use that.  
 
 
+## Video
+
+https://user-images.githubusercontent.com/5061719/220075518-18384d79-efdd-4332-b093-371b0a0fef05.mov
+
