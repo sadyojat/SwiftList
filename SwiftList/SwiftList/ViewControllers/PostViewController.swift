@@ -11,11 +11,17 @@ import UIKit
 
 class PostViewController: UIViewController {
 
+    typealias TypeErasedPostFeedPublisher = AnyPublisher<OrderedDictionary<Post.ID, Post>, Never>
+
     private var cancellables = Set<AnyCancellable>()
 
     private var postFeed = PostFeed.shared
 
     private let networkInteractor = NetworkInteractor()
+
+    private var postFeedPublisher: TypeErasedPostFeedPublisher {
+        postFeed.$postMap.eraseToAnyPublisher()
+    }
 
     private lazy var tableView: UITableView = {
         let tv = UITableView(frame: .zero, style: .plain)
@@ -65,8 +71,7 @@ class PostViewController: UIViewController {
 extension PostViewController /* Pub-Sub setup */{
     func setupSubscriptions() {
 
-        postFeed.$postMap
-            .receive(on: DispatchQueue.main)
+        postFeedPublisher
             .sink { [weak self] mappedPosts in
                 guard let self = self else { return }
                 var snapshot = self.dataSource.snapshot()
@@ -88,8 +93,11 @@ extension PostViewController /* Pub-Sub setup */{
 
                 snapshot.appendItems(appends)
                 snapshot.reconfigureItems(reconfigures)
-                self.dataSource.apply(snapshot, animatingDifferences: true) {
-                    self.navigationItem.title = "Posts : \(String(describing: self.postFeed.postMap.count))"
+
+                DispatchQueue.main.async {
+                    self.dataSource.apply(snapshot, animatingDifferences: true) {
+                        self.navigationItem.title = "Posts : \(String(describing: self.postFeed.postMap.count))"
+                    }
                 }
             }
             .store(in: &cancellables)

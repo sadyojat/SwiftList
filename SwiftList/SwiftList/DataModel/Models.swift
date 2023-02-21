@@ -47,7 +47,9 @@ class PhotoVM: Identifiable {
 
     // view state information
     var thumbnailImage: UIImage?
-    private (set) var image: UIImage?
+    var image: UIImage?
+    var isFavorite: Bool = false
+
 
     init(albumId: Int, id: Int, title: String, url: String, thumbnailUrl: String,
          thumbnailImage: UIImage? = nil, image: UIImage? = nil) {

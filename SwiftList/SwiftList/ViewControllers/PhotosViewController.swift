@@ -12,6 +12,7 @@ import OrderedCollections
 class PhotosViewController: UIViewController {
 
     typealias TypeErasedPhotoFeedPublisher = AnyPublisher<OrderedDictionary<PhotoVM.ID, PhotoVM>, Never>
+    typealias TypeErasedNotificationPublisher = AnyPublisher<Notification, Never>
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -19,6 +20,10 @@ class PhotosViewController: UIViewController {
 
     private var feedPublisher: TypeErasedPhotoFeedPublisher {
         PhotoFeed.shared.$photoViewModels.eraseToAnyPublisher()
+    }
+
+    private var togglePhotoFavoritePublisher: TypeErasedNotificationPublisher {
+        NotificationCenter.default.publisher(for: Notification.Name.TogglePhotoFavoriteStatus).eraseToAnyPublisher()
     }
 
     private let networkInteractor = NetworkInteractor()
@@ -126,9 +131,7 @@ class PhotosViewController: UIViewController {
 
     func setupSubscriptions() {
         feedPublisher
-            .eraseToAnyPublisher()
             .sink { [weak self] photoViewModels in
-                print("** Received \(photoViewModels.count)**")
                 guard let self = self else { return }
                 var snapshot = self.dataSource.snapshot()
 
@@ -156,10 +159,27 @@ class PhotosViewController: UIViewController {
                 }
             }
             .store(in: &cancellables)
+
+        togglePhotoFavoritePublisher
+            .sink { notification in
+                if let itemIdentifier = notification.object as? PhotoVM.ID {
+                    var updateSnapshot = self.dataSource.snapshot()
+                    updateSnapshot.reconfigureItems([itemIdentifier])
+                    DispatchQueue.main.async {
+                        self.dataSource.apply(updateSnapshot)
+                    }
+                }
+            }
+            .store(in: &cancellables)
     }
 }
 
-
 extension PhotosViewController: UITableViewDelegate {
-
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        let detailVC = PhotosDetailViewController()
+        let (_, value) = photoFeed.photoViewModels.elements[indexPath.row]
+        detailVC.configure(with: value.id)
+        navigationController?.pushViewController(detailVC, animated: true)
+    }
 }
