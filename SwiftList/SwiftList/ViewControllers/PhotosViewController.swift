@@ -7,14 +7,19 @@
 
 import Combine
 import UIKit
+import OrderedCollections
 
 class PhotosViewController: UIViewController {
+
+    typealias TypeErasedPhotoFeedPublisher = AnyPublisher<OrderedDictionary<PhotoVM.ID, PhotoVM>, Never>
 
     private var cancellables = Set<AnyCancellable>()
 
     private var photoFeed: PhotoFeed { PhotoFeed.shared }
 
-    private var feedPublisher = PhotoFeed.shared.$photoViewModels
+    private var feedPublisher: TypeErasedPhotoFeedPublisher {
+        PhotoFeed.shared.$photoViewModels.eraseToAnyPublisher()
+    }
 
     private let networkInteractor = NetworkInteractor()
 
@@ -34,24 +39,71 @@ class PhotosViewController: UIViewController {
             let item = self.photoFeed.photoViewModels[itemIdentifier]
             cell.configure(with: item)
 
-            if item?.thumbnailImage == nil {
-                Task { [weak self] in
-                    guard let self = self, let item = item else { return }
-                    let image = await self.imageCache.image(for: item.thumbnailUrl)
-                    if itemIdentifier == item.id, let img = image, img != item.thumbnailImage {
-                        var updatedSnapshot = self.dataSource.snapshot()
-                        item.thumbnailImage = img
-                        updatedSnapshot.reconfigureItems([itemIdentifier])
-                        await MainActor.run(body: {
-                            self.dataSource.apply(updatedSnapshot)
-                        })
-                    }
-                }
+            // MARK: Example of using async/ await swift concurrency to download images
+            // TODO: Uncomment following lines to see behavior with async/await concurrency
+            /*
+            if let item = item, item.thumbnailImage == nil {
+                self.downloadImageWithConcurrency(for: item, identifier: itemIdentifier)
+            }
+            */
+
+            // MARK: Example of using combine to async download an image and reconfigure items in diffable data source
+            // TODO: Uncomment following lines to see behavior with combine type erased publisher.
+            if let item = item, item.thumbnailImage == nil {
+                self.downloadImageWithCombine(for: item, identifier: itemIdentifier)
             }
             return cell
         }
         return ds
     }()
+
+
+    /// Download image asynchronously using swift concurrency patterns
+    /// - Parameters:
+    ///   - item: Item view model instance
+    ///   - identifier: item identifier
+    private func downloadImageWithConcurrency(for item: PhotoVM, identifier: PhotoVM.ID) {
+        if item.thumbnailImage == nil {
+            Task { [weak self] in
+                guard let self = self else { return }
+                let image = await self.imageCache.image(for: item.thumbnailUrl)
+                if identifier == item.id, let img = image, img != item.thumbnailImage {
+                    var updatedSnapshot = self.dataSource.snapshot()
+                    item.thumbnailImage = img
+                    updatedSnapshot.reconfigureItems([identifier])
+                    await MainActor.run(body: {
+                        self.dataSource.apply(updatedSnapshot)
+                    })
+                }
+            }
+        }
+    }
+
+    /// Download image asynchronously using combine
+    /// - Parameters:
+    ///   - item: Item view model instance
+    ///   - identifier: item identifier
+    private func downloadImageWithCombine(for item: PhotoVM, identifier: PhotoVM.ID) {
+        if item.thumbnailImage == nil, let thumbnailUrl = URL(string: item.thumbnailUrl) {
+            URLSession.shared
+                .dataTaskPublisher(for: thumbnailUrl)
+                .eraseToAnyPublisher()
+                .sink { [weak self] _ in
+                    guard let self = self else { return }
+                    var updatedSnapshot = self.dataSource.snapshot()
+                    updatedSnapshot.reconfigureItems([identifier])
+                    DispatchQueue.main.async {
+                        self.dataSource.apply(updatedSnapshot)
+                    }
+                } receiveValue: { [weak self] (data: Data, response: URLResponse) in
+                    guard let image = UIImage(data: data) else { return }
+                    item.thumbnailImage = image
+                    guard let self = self else { return }
+                    self.imageCache.setImage(image, for: item.thumbnailUrl, cost: data.count)
+                }
+                .store(in: &self.cancellables)
+        }
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -74,7 +126,7 @@ class PhotosViewController: UIViewController {
 
     func setupSubscriptions() {
         feedPublisher
-            .receive(on: DispatchQueue.main)
+            .eraseToAnyPublisher()
             .sink { [weak self] photoViewModels in
                 print("** Received \(photoViewModels.count)**")
                 guard let self = self else { return }
@@ -96,8 +148,11 @@ class PhotosViewController: UIViewController {
                 }
                 snapshot.appendItems(appends)
                 snapshot.reconfigureItems(reconfigures)
-                self.dataSource.apply(snapshot, animatingDifferences: true) {
-                    self.navigationItem.title = "Photos : \(snapshot.itemIdentifiers.count)"
+
+                DispatchQueue.main.async {
+                    self.dataSource.apply(snapshot, animatingDifferences: true) {
+                        self.navigationItem.title = "Photos : \(snapshot.itemIdentifiers.count)"
+                    }
                 }
             }
             .store(in: &cancellables)
