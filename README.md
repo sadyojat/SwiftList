@@ -37,5 +37,10 @@ A good optimization to this is to use a `OrderedDictionary`. This will however n
 
 An example of how this data structure could be used in combine is implemented in this [commit](https://github.com/sadyojat/SwiftList/commit/b8fbb2e7a5b6dfdf8bfa498f68016bff4b4d1517#diff-78f628a934988156096af1ffee798cd4e6cb89ff31bdffb4f8df76e731e42aa2). Here I also explore some nuance of when to receive on `RunLoop.main` vs `DispatchQueue.main`, and using appropriate item identifiers. 
 
+---
+
+## Asynchronous asset downloads
+
+Images are generally downloaded asynchronously. We can leverage the power of swift concurrency and diffable data sources to do targeted download and reconfigure specific items in the data source. To see this behavior in action refer to this [commit](https://github.com/sadyojat/SwiftList/commit/1f60b53aaa7d8c1711af8b20b06f57f6fd2534cd#diff-66d6bb6a602212a604e22af08c0779613de7c376a7b88a88d34122e4127d87c9)
 
 
