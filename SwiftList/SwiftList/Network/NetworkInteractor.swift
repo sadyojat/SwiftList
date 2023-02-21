@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 
 class NetworkInteractor {
 
@@ -28,6 +29,6 @@ class NetworkInteractor {
                     return try JSONDecoder().decode([Album].self, from: data)
                 }
         }
-    }
+    }    
     
 }
