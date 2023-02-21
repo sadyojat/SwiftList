@@ -14,7 +14,12 @@ class ImageCache {
 
     private init() {}
 
-    private let cache = NSCache<NSString, UIImage>()
+    private let cache = {
+        let cache = NSCache<NSString, UIImage>()
+        cache.evictsObjectsWithDiscardedContent = true
+        cache.countLimit = 500
+        return cache
+    }()
 
     func image(for key: String) async -> UIImage? {
         if let image = cache.object(forKey: key as NSString) {
@@ -24,8 +29,8 @@ class ImageCache {
         }
     }
 
-    func setImage(_ image: UIImage, for key: NSString) {
-        cache.setObject(image, forKey: key)
+    func setImage(_ image: UIImage, for key: String, cost: Int = 0) {
+        cache.setObject(image, forKey: key as NSString, cost: cost)
     }
 
     private func downloadImage(from urlString: String) async -> UIImage? {
@@ -35,7 +40,7 @@ class ImageCache {
                 else {
             return nil
         }
-        ImageCache.shared.setImage(image, for: urlString as NSString)
+        ImageCache.shared.setImage(image, for: urlString, cost: data.count)
         return image
     }
 }
