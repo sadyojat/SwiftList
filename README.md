@@ -49,3 +49,12 @@ Images are generally downloaded asynchronously. We can leverage the power of swi
 
 https://user-images.githubusercontent.com/5061719/220228178-f6746ef0-8e49-4bc3-93b3-4e9a078ed528.mov
 
+
+---
+
+## Patterns to Not adopt and the ones to adopt while using combine.
+
+The Posts list is an example of `sub optimal` combine adoption. The data models that feed into the list is a dictionary of value types, and as such any mutation in its properties reflects as a change in the value of the `Published` post map, which in turn triggers a full publish of all values in that map. This is an **overhead**, since the whole list is reconfigured for a single property change in one instance. 
+
+The preferred way is the pattern used in the PhotosViewController, where a ViewModel corresponding to the cell is created. This adopts the `MVVM` pattern. The View model instances are reference types and although changes in the property update the model, it does not publish it out as a full object change. Its possible here to put targeted publishes to update individual item identifiers. In this example, I have used the notification publisher to notify of an update to one instance. Passing the item identifier helps in then extracting the corresponding view model instance and reconfigure the cell. This is a better and a more performant pattern to use than doing a full refresh or reconfig of the entire table view. 
+
